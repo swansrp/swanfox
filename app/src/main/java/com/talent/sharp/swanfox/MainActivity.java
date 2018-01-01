@@ -1,11 +1,17 @@
 package com.talent.sharp.swanfox;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -38,7 +44,8 @@ public class MainActivity extends AppCompatActivity {
     private Switch swUmengPush;
     private EditText etLocationFeq;
     private Button btnLocation;
-    private Switch swLocation;
+    private Switch swGps;
+    private Switch swNetwork;
     private TextView tvLongitude;
     private TextView tvLatitude;
     private TextView tvCellId;
@@ -49,38 +56,20 @@ public class MainActivity extends AppCompatActivity {
     private Toolbar toolbar;
     private FloatingActionButton fab;
 
-    private LocationManager locationManager;
-    private TelephonyManager telephonyManager;
 
-    protected final LocationListener locationListener = new LocationListener() {
 
-        // 当位置发生变化时，输出位置信息
-        public void onLocationChanged(Location location) {
-            Log.d(TAG, "Location changed to: " + getLocationInfo(location));
-            mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_LOCTION,location));
-        }
+    private boolean mIsLocationBound = false;
+    private LocationService.LocalBinder mLocationBinder = null;
 
-        public void onProviderDisabled(String provider) {
-            Log.d(TAG, provider + " disabled.");
-        }
 
-        public void onProviderEnabled(String provider) {
-            Log.d(TAG, provider + " enabled.");
-        }
 
-        public void onStatusChanged(String provider, int status,
-                                    Bundle extras){
-            Log.d(TAG, provider + " status changed.");
-        }
-    };
-
-    private final int MSG_UPDATE_LOCTION = 0;
-
+    public final static int MSG_UPDATE_LOCATION = 0;
+    public final static int MSG_REQ_LOCATION_PERMISSION = 1;
 
     private enum EnumPush{
         GE_PUSH,
         J_PUSH,
-        UMENG_PUSH;
+        UMENG_PUSH
     }
     private void initView() {
         setContentView(R.layout.activity_main);
@@ -89,7 +78,8 @@ public class MainActivity extends AppCompatActivity {
         swUmengPush = (Switch) findViewById(R.id.sw_umeng_push);
         etLocationFeq = (EditText) findViewById(R.id.et_location_feq);
         btnLocation = (Button) findViewById(R.id.btn_location_feq);
-        swLocation = (Switch) findViewById(R.id.sw_location);
+        swGps = (Switch) findViewById(R.id.sw_gps);
+        swNetwork = (Switch) findViewById(R.id.sw_nw);
         tvLongitude = (TextView) findViewById(R.id.tv_longitude);
         tvLatitude = (TextView) findViewById(R.id.tv_latitude);
         tvCellId = (TextView) findViewById(R.id.tv_cellid);
@@ -97,6 +87,13 @@ public class MainActivity extends AppCompatActivity {
         tvSysId = (TextView) findViewById(R.id.tv_sid);
         tvNwId = (TextView) findViewById(R.id.tv_nid);
         tvBaseId = (TextView) findViewById(R.id.tv_bid);
+
+        swGePush.setChecked(getSwitchPreference(swGePush));
+        swJiPush.setChecked(getSwitchPreference(swJiPush));
+        swUmengPush.setChecked(getSwitchPreference(swUmengPush));
+
+        swGps.setChecked(getSwitchPreference(swGps));
+        swNetwork.setChecked(getSwitchPreference(swNetwork));
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -111,6 +108,38 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private boolean getSwitchPreference(Switch sw) {
+        SharedPreferences preferences = getSharedPreferences("config",Context.MODE_PRIVATE);
+        if(sw == swGePush) {
+            return preferences.getBoolean("GE_PUSH", false);
+        } else if(sw == swJiPush) {
+            return preferences.getBoolean("JI_PUSH", false);
+        } else if(sw == swUmengPush) {
+            return preferences.getBoolean("UMENG_PUSH", false);
+        } else if(sw == swGps) {
+            return preferences.getBoolean("GPS_LOCATION", false);
+        } else if(sw == swNetwork) {
+            return preferences.getBoolean("NETWORK_LOCATION", false);
+        }
+        return false;
+    }
+    private void setSwitchPreference(Switch sw, boolean enable) {
+        SharedPreferences preferences = getSharedPreferences("config",Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor=preferences.edit();
+        if(sw == swGePush) {
+            editor.putBoolean("GE_PUSH", enable);
+        } else if(sw == swJiPush) {
+            editor.putBoolean("JI_PUSH", enable);
+        } else if(sw == swUmengPush) {
+            editor.putBoolean("UMENG_PUSH", enable);
+        } else if(sw == swGps) {
+            editor.putBoolean("GPS_LOCATION", enable);
+        } else if(sw == swNetwork) {
+            editor.putBoolean("NETWORK_LOCATION", enable);
+        }
+        editor.apply();
+        editor.commit();
+    }
     private void disablePush(EnumPush category) {
         switch(category) {
             case GE_PUSH:
@@ -155,8 +184,9 @@ public class MainActivity extends AppCompatActivity {
         swGePush.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                setSwitchPreference(swGePush, isChecked);
                 if(isChecked) {
-                   enablePush(EnumPush.GE_PUSH);
+                    enablePush(EnumPush.GE_PUSH);
                 } else {
                     disablePush(EnumPush.GE_PUSH);
                 }
@@ -165,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
         swJiPush.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                setSwitchPreference(swJiPush, isChecked);
                 if(isChecked) {
                     enablePush(EnumPush.J_PUSH);
                 } else {
@@ -175,6 +206,7 @@ public class MainActivity extends AppCompatActivity {
         swUmengPush.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                setSwitchPreference(swUmengPush, isChecked);
                 if(isChecked) {
                     enablePush(EnumPush.UMENG_PUSH);
                 } else {
@@ -185,50 +217,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initLocationService() {
-        // 获取 LocationManager
-        locationManager = (LocationManager)getSystemService(LOCATION_SERVICE);
-        telephonyManager = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
-    }
-
-    private void updateLocation(String currentProvider) {
-        Log.d(TAG, "CurrentProvider: " + currentProvider);
-        // 获取 Provider 最后一个记录的地址信息
-        Location lastKnownLocation = null;
-        try {
-            lastKnownLocation = locationManager.getLastKnownLocation(currentProvider);
-            if (lastKnownLocation != null) {
-                Log.d(TAG, "LastKnownLocation: "
-                        + getLocationInfo(lastKnownLocation));
-            } else {
-                Log.d(TAG, "Last Location Unkown!");
+        bindLocationService();
+        swGps.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                setSwitchPreference(swGps, isChecked);
+                if(isChecked) {
+                    mLocationBinder.startLocationUpdate(LocationManager.GPS_PROVIDER);
+                } else {
+                    mLocationBinder.stopLocationUpdate(LocationManager.GPS_PROVIDER);
+                }
             }
-            // 注册监听器接受位置更新
-            locationManager.requestLocationUpdates(currentProvider, 0, 0,
-                    locationListener);
-        } catch (SecurityException e) {
-            this.requestPermissions(new String[] {"android.permission.ACCESS_FINE_LOCATION"},0);
+        });
+        swNetwork.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                setSwitchPreference(swNetwork, isChecked);
+                if(isChecked) {
+                    mLocationBinder.startLocationUpdate(LocationManager.NETWORK_PROVIDER);
+                } else {
+                    mLocationBinder.stopLocationUpdate(LocationManager.NETWORK_PROVIDER);
+                }
+            }
+        });
+    }
+
+
+    private void updateLocationDisplay(){
+        Location loc = mLocationBinder.getCurLocation();
+        if (loc != null) {
+            mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_LOCATION,loc));
         }
     }
 
-    /**
-     * 将 Location 对象转换成字符串形式方便显示
-     *
-     * @param location
-     *            Location 对象
-     * @return 字符串形式的表示
-     */
-    private String getLocationInfo(Location location) {
-        String info = "";
-        info += "Longitude:" + location.getLongitude();
-        info += ", Latitude:" + location.getLatitude();
-        if (location.hasAltitude()) {
-            info += ", Altitude:" + location.getAltitude();
-        }
-        if (location.hasBearing()) {
-            info += ", Bearing:" + location.getBearing();
-        }
-        return info;
-    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -241,8 +263,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        updateLocation(LocationManager.NETWORK_PROVIDER);
-        //updateLocation(LocationManager.GPS_PROVIDER);
+        updateLocationDisplay();
     }
 
     @Override
@@ -265,6 +286,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        doUnbindService();
     }
 
     @Override
@@ -297,15 +324,55 @@ public class MainActivity extends AppCompatActivity {
         public boolean handleMessage(Message msg) {
             Log.d(TAG, "msg.what: " + msg.what);
             switch (msg.what) {
-                case MSG_UPDATE_LOCTION:
+                case MSG_UPDATE_LOCATION:
                     Location loc = (Location)(msg.obj);
                     tvLatitude.setText(String.valueOf(loc.getLatitude()));
                     tvLongitude.setText(String.valueOf(loc.getLongitude()));
+                    break;
+                case MSG_REQ_LOCATION_PERMISSION:
+                    MainActivity.this.requestPermissions((String[])(msg.obj), 0);
                     break;
             }
             return false;
         }
     });
+
+    /**
+     * 绑定服务
+     */
+    void bindLocationService() {
+        //Location Service
+        bindService(new Intent(MainActivity.this,
+                LocationService.class), mConnection, Context.BIND_AUTO_CREATE);
+        mIsLocationBound = true;
+    }
+
+    /**
+     * 解除绑定
+     */
+    void doUnbindService() {
+        if (mIsLocationBound) {
+            unbindService(mConnection);
+            mIsLocationBound = false;
+        }
+    }
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            mLocationBinder =  (LocationService.LocalBinder) service;
+            mLocationBinder.regLocationUpdateCallBack(mHandler);
+            if(swGps.isChecked()) {
+                mLocationBinder.startLocationUpdate(LocationManager.GPS_PROVIDER);
+            }
+            if(swNetwork.isChecked()) {
+                mLocationBinder.startLocationUpdate(LocationManager.NETWORK_PROVIDER);
+            }
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            mLocationBinder = null;
+        }
+    };
 
 
     /**
