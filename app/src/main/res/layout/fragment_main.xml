@@ -15,14 +15,13 @@
             android:id="@+id/tv_push_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="5dip"
+            android:layout_marginStart="5dip"
             android:text="推送服务" />
         <View
             android:layout_marginLeft="5dip"
             android:layout_marginRight="5dip"
             android:layout_marginTop="5dip"
             android:layout_marginBottom="5dip"
-            android:layout_alignParentBottom="true"
             android:background="#000000"
             android:layout_width="fill_parent"
             android:layout_height="1dip"/>
@@ -60,7 +59,6 @@
             android:layout_marginRight="5dip"
             android:layout_marginTop="5dip"
             android:layout_marginBottom="5dip"
-            android:layout_alignParentBottom="true"
             android:background="#000000"
             android:layout_width="fill_parent"
             android:layout_height="0.2dip"/>
@@ -98,7 +96,6 @@
             android:layout_marginRight="5dip"
             android:layout_marginTop="5dip"
             android:layout_marginBottom="5dip"
-            android:layout_alignParentBottom="true"
             android:background="#000000"
             android:layout_width="fill_parent"
             android:layout_height="0.2dip"/>
@@ -136,7 +133,6 @@
             android:layout_marginRight="5dip"
             android:layout_marginTop="5dip"
             android:layout_marginBottom="5dip"
-            android:layout_alignParentBottom="true"
             android:background="#000000"
             android:layout_width="fill_parent"
             android:layout_height="1dip"/>
@@ -154,14 +150,14 @@
                 android:id="@+id/tv_location_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="5dip"
+                android:layout_marginStart="5dip"
                 android:text="定位服务"
                 android:layout_weight="6"/>
             <View
                 android:layout_width="1dip"
                 android:layout_height="fill_parent"
                 android:background="?android:attr/listDivider"
-                android:layout_marginRight="20dip"/>
+                android:layout_marginEnd="20dip"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -174,14 +170,18 @@
                 android:text="30"
                 android:gravity="center_horizontal"
                 android:layout_weight="1"
-                android:textSize="15dip"
-                android:cursorVisible="false"/>
+                android:textSize="15sp"
+                android:singleLine="true"
+                android:digits="0123456789"
+                android:maxLength="3"
+                android:inputType="number"
+                android:cursorVisible="true"/>
             <Button
                 android:id="@+id/btn_location_feq"
                 android:layout_width="65dip"
                 android:layout_height="35dip"
-                android:text="立即定位"
-                android:textSize="10dip"
+                android:text="设置周期"
+                android:textSize="10sp"
                 android:layout_marginLeft="10dip"
                 android:layout_marginRight="10dip"/>
 
@@ -190,7 +190,6 @@
             android:layout_marginLeft="5dip"
             android:layout_marginRight="5dip"
             android:layout_marginBottom="5dip"
-            android:layout_alignParentBottom="true"
             android:background="#000000"
             android:layout_width="fill_parent"
             android:layout_height="1dip"/>
@@ -202,8 +201,8 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="定位"
-                android:layout_weight="4"
+                android:text="GPS定位"
+                android:layout_weight="1"
                 android:gravity="center"/>
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -214,7 +213,34 @@
                 android:layout_height="fill_parent"
                 android:background="?android:attr/listDivider"/>
             <Switch
-                android:id="@+id/sw_location"
+                android:id="@+id/sw_gps"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+            <View
+                android:layout_width="1dip"
+                android:layout_height="fill_parent"
+                android:background="?android:attr/listDivider"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="网络定位"
+                android:layout_weight="1"
+                android:gravity="center"/>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+            <View
+                android:layout_width="1dip"
+                android:layout_height="fill_parent"
+                android:background="?android:attr/listDivider"/>
+            <Switch
+                android:id="@+id/sw_nw"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"/>
@@ -228,7 +254,6 @@
             android:layout_marginRight="5dip"
             android:layout_marginBottom="5dip"
             android:layout_marginTop="5dip"
-            android:layout_alignParentBottom="true"
             android:background="#000000"
             android:layout_width="fill_parent"
             android:layout_height="0.1dip"/>
@@ -254,7 +279,7 @@
                 android:layout_width="1dip"
                 android:layout_height="fill_parent"
                 android:background="?android:attr/listDivider"
-                android:layout_marginRight="10dip"/>
+                android:layout_marginEnd="10dip"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -274,7 +299,6 @@
             android:layout_marginRight="5dip"
             android:layout_marginBottom="5dip"
             android:layout_marginTop="5dip"
-            android:layout_alignParentBottom="true"
             android:background="#000000"
             android:layout_width="fill_parent"
             android:layout_height="0.1dip"/>
@@ -300,7 +324,7 @@
                 android:layout_width="1dip"
                 android:layout_height="fill_parent"
                 android:background="?android:attr/listDivider"
-                android:layout_marginRight="10dip"/>
+                android:layout_marginEnd="10dip"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -320,7 +344,7 @@
             android:layout_marginRight="5dip"
             android:layout_marginBottom="5dip"
             android:layout_marginTop="5dip"
-            android:layout_alignParentBottom="true"
+
             android:background="#000000"
             android:layout_width="fill_parent"
             android:layout_height="0.1dip"/>
@@ -332,7 +356,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="5dip"
+                android:layout_marginStart="5dip"
                 android:text="系统号："
                 android:gravity="center"
                 android:layout_weight="1"/>
@@ -347,7 +371,7 @@
                 android:layout_width="1dip"
                 android:layout_height="fill_parent"
                 android:background="?android:attr/listDivider"
-                android:layout_marginRight="10dip"/>
+                android:layout_marginEnd="10dip"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -365,7 +389,7 @@
                 android:layout_width="1dip"
                 android:layout_height="fill_parent"
                 android:background="?android:attr/listDivider"
-                android:layout_marginRight="10dip"/>
+                android:layout_marginEnd="10dip"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -385,14 +409,12 @@
             android:layout_marginRight="5dip"
             android:layout_marginBottom="5dip"
             android:layout_marginTop="5dip"
-            android:layout_alignParentBottom="true"
             android:background="#000000"
             android:layout_width="fill_parent"
             android:layout_height="0.2dip"/>
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_alignParentBottom="true">
+            android:layout_height="match_parent">
             <View
                 android:layout_marginLeft="5dip"
                 android:layout_marginRight="5dip"
@@ -401,8 +423,7 @@
                 android:background="#000000"
                 android:layout_width="fill_parent"
                 android:layout_height="2dip"
-                android:layout_gravity="bottom"
-                android:layout_alignParentBottom="true"/>
+                android:layout_gravity="bottom"/>
         </LinearLayout>
     </LinearLayout>
 

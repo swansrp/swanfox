@@ -108,6 +108,19 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private String getPreference(String tag, String defaultValue) {
+        SharedPreferences preferences = getSharedPreferences("config",Context.MODE_PRIVATE);
+        return preferences.getString(tag, defaultValue);
+    }
+
+    private void setPreference(String tag, String value) {
+        SharedPreferences preferences = getSharedPreferences("config",Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor=preferences.edit();
+        editor.putString(tag, value);
+        editor.apply();
+        editor.commit();
+    }
+
     private boolean getSwitchPreference(Switch sw) {
         SharedPreferences preferences = getSharedPreferences("config",Context.MODE_PRIVATE);
         if(sw == swGePush) {
@@ -240,10 +253,36 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        btnLocation.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                String defaultFeqTime = getPreference("FEQ_TIME", "30");
+                String feqTime = etLocationFeq.getText().toString();
+                if(feqTime.equals("")) {
+                    etLocationFeq.setText(defaultFeqTime);
+                }
+                feqTime = etLocationFeq.getText().toString();
+                setPreference("FEQ_TIME",feqTime);
+                int time = Integer.valueOf(feqTime);
+                if(mLocationBinder!=null) {
+                    Location loc = mLocationBinder.getCurLocation();
+                    if(loc != null) {
+                        mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_LOCATION, loc));
+                    }
+                    if(swGps.isChecked()) {
+                        mLocationBinder.setLocationFeq(LocationManager.GPS_PROVIDER, time);
+                    }
+                    if(swNetwork.isChecked()) {
+                        mLocationBinder.setLocationFeq(LocationManager.NETWORK_PROVIDER, time);
+                    }
+                }
+            }
+        });
     }
 
-
     private void updateLocationDisplay(){
+        if(mLocationBinder == null) {
+            return;
+        }
         Location loc = mLocationBinder.getCurLocation();
         if (loc != null) {
             mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_LOCATION,loc));
