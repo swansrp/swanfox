@@ -46,8 +46,10 @@ public class MainActivity extends AppCompatActivity {
     private Button btnLocation;
     private Switch swGps;
     private Switch swNetwork;
-    private TextView tvLongitude;
-    private TextView tvLatitude;
+    private TextView tvGpsLongitude;
+    private TextView tvGpsLatitude;
+    private TextView tvNwLongitude;
+    private TextView tvNwLatitude;
     private TextView tvCellId;
     private TextView tvLac;
     private TextView tvSysId;
@@ -63,8 +65,9 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public final static int MSG_UPDATE_LOCATION = 0;
-    public final static int MSG_REQ_LOCATION_PERMISSION = 1;
+    public final static int MSG_UPDATE_GPS_LOCATION = 0;
+    public final static int MSG_UPDATE_NW_LOCATION = 1;
+    public final static int MSG_REQ_LOCATION_PERMISSION = 2;
 
     private enum EnumPush{
         GE_PUSH,
@@ -80,8 +83,10 @@ public class MainActivity extends AppCompatActivity {
         btnLocation = (Button) findViewById(R.id.btn_location_feq);
         swGps = (Switch) findViewById(R.id.sw_gps);
         swNetwork = (Switch) findViewById(R.id.sw_nw);
-        tvLongitude = (TextView) findViewById(R.id.tv_longitude);
-        tvLatitude = (TextView) findViewById(R.id.tv_latitude);
+        tvGpsLongitude = (TextView) findViewById(R.id.tv_gps_longitude);
+        tvGpsLatitude = (TextView) findViewById(R.id.tv_gps_latitude);
+        tvNwLongitude = (TextView) findViewById(R.id.tv_nw_longitude);
+        tvNwLatitude = (TextView) findViewById(R.id.tv_nw_latitude);
         tvCellId = (TextView) findViewById(R.id.tv_cellid);
         tvLac = (TextView) findViewById(R.id.tv_lac);
         tvSysId = (TextView) findViewById(R.id.tv_sid);
@@ -239,6 +244,8 @@ public class MainActivity extends AppCompatActivity {
                     mLocationBinder.startLocationUpdate(LocationManager.GPS_PROVIDER);
                 } else {
                     mLocationBinder.stopLocationUpdate(LocationManager.GPS_PROVIDER);
+                    tvGpsLatitude.setText("______");
+                    tvGpsLongitude.setText("______");
                 }
             }
         });
@@ -250,6 +257,8 @@ public class MainActivity extends AppCompatActivity {
                     mLocationBinder.startLocationUpdate(LocationManager.NETWORK_PROVIDER);
                 } else {
                     mLocationBinder.stopLocationUpdate(LocationManager.NETWORK_PROVIDER);
+                    tvNwLatitude.setText("______");
+                    tvNwLongitude.setText("______");
                 }
             }
         });
@@ -264,16 +273,13 @@ public class MainActivity extends AppCompatActivity {
                 setPreference("FEQ_TIME",feqTime);
                 int time = Integer.valueOf(feqTime);
                 if(mLocationBinder!=null) {
-                    Location loc = mLocationBinder.getCurLocation();
-                    if(loc != null) {
-                        mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_LOCATION, loc));
-                    }
                     if(swGps.isChecked()) {
                         mLocationBinder.setLocationFeq(LocationManager.GPS_PROVIDER, time);
                     }
                     if(swNetwork.isChecked()) {
                         mLocationBinder.setLocationFeq(LocationManager.NETWORK_PROVIDER, time);
                     }
+                    updateLocationDisplay();
                 }
             }
         });
@@ -283,9 +289,17 @@ public class MainActivity extends AppCompatActivity {
         if(mLocationBinder == null) {
             return;
         }
-        Location loc = mLocationBinder.getCurLocation();
-        if (loc != null) {
-            mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_LOCATION,loc));
+        if(swGps.isChecked()) {
+            Location loc = mLocationBinder.getCurLocation(LocationManager.GPS_PROVIDER);
+            if(loc != null) {
+                mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_GPS_LOCATION, loc));
+            }
+        }
+        if(swNetwork.isChecked()) {
+            Location loc = mLocationBinder.getCurLocation(LocationManager.NETWORK_PROVIDER);
+            if(loc != null) {
+                mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_NW_LOCATION, loc));
+            }
         }
     }
 
@@ -362,11 +376,17 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public boolean handleMessage(Message msg) {
             Log.d(TAG, "msg.what: " + msg.what);
+            Location loc = null;
             switch (msg.what) {
-                case MSG_UPDATE_LOCATION:
-                    Location loc = (Location)(msg.obj);
-                    tvLatitude.setText(String.valueOf(loc.getLatitude()));
-                    tvLongitude.setText(String.valueOf(loc.getLongitude()));
+                case MSG_UPDATE_GPS_LOCATION:
+                    loc = (Location)(msg.obj);
+                    tvGpsLatitude.setText(String.valueOf(loc.getLatitude()));
+                    tvGpsLongitude.setText(String.valueOf(loc.getLongitude()));
+                    break;
+                case MSG_UPDATE_NW_LOCATION:
+                    loc = (Location)(msg.obj);
+                    tvNwLatitude.setText(String.valueOf(loc.getLatitude()));
+                    tvNwLongitude.setText(String.valueOf(loc.getLongitude()));
                     break;
                 case MSG_REQ_LOCATION_PERMISSION:
                     MainActivity.this.requestPermissions((String[])(msg.obj), 0);

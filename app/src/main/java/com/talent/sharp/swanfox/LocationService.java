@@ -25,8 +25,7 @@ import java.util.Map;
 public class LocationService extends Service {
     private final String TAG = "OhEunSook_" + LocationService.class.getSimpleName();
     private Handler displayHandler = null;
-    private LocalBinder mbinder = null;
-    private Location curLocation = null;
+    private LocalBinder mBinder = null;
     private LocationManager locationManager;
     private TelephonyManager telephonyManager;
     private AlarmManager alarmManager;
@@ -35,9 +34,26 @@ public class LocationService extends Service {
     private final String MSG_GET_GPS_LOCATION = "MSG_GET_GPS_LOCATION";
     private final String MSG_GET_NETWORK_LOCATION = "MSG_GET_NETWORK_LOCATION";
     private Map<String, LocationListener> locationListenerMap = new HashMap<String, LocationListener>();
+    private Map<String, Location> curLocationMap = new HashMap<String, Location>();
 
     private void updateDisplayLocation() {
-        updateDisplayLocation(curLocation);
+        for(Map.Entry<String, Location> entry: curLocationMap.entrySet()) {
+            updateDisplayLocation(entry.getKey());
+        }
+    }
+    private void updateDisplayLocation(String provider) {
+        if(displayHandler!=null) {
+            int msgType = -1;
+            if(provider.equals(LocationManager.GPS_PROVIDER)) {
+                msgType = MainActivity.MSG_UPDATE_GPS_LOCATION;
+            } else if(provider.equals(LocationManager.NETWORK_PROVIDER)){
+                msgType = MainActivity.MSG_UPDATE_NW_LOCATION;
+            }
+            displayHandler.sendMessage(displayHandler.obtainMessage(
+                    msgType, curLocationMap.get(provider)));
+        } else {
+          Log.d(TAG, "There is no Display Handler");
+        }
     }
 
     private void requestPermissions(String[] permissions) {
@@ -45,19 +61,13 @@ public class LocationService extends Service {
                 MainActivity.MSG_REQ_LOCATION_PERMISSION, permissions));
     }
 
-    private void updateDisplayLocation(Location loc) {
-        displayHandler.sendMessage(displayHandler.obtainMessage(
-                MainActivity.MSG_UPDATE_LOCATION, loc));
-    }
-
     protected final LocationListener gpsLocationListener = new LocationListener() {
 
         // 当位置发生变化时，输出位置信息
         public void onLocationChanged(Location location) {
-            Log.d(TAG, "Location changed to: " + getLocationInfo(location));
-            curLocation = location;
-            updateDisplayLocation();
-
+            Log.d(TAG, "GPS Location changed to: " + getLocationInfo(location));
+            curLocationMap.put(LocationManager.GPS_PROVIDER, location);
+            updateDisplayLocation(LocationManager.GPS_PROVIDER);
         }
 
         public void onProviderDisabled(String provider) {
@@ -77,10 +87,9 @@ public class LocationService extends Service {
 
         // 当位置发生变化时，输出位置信息
         public void onLocationChanged(Location location) {
-            Log.d(TAG, "Location changed to: " + getLocationInfo(location));
-            curLocation = location;
-            updateDisplayLocation();
-
+            Log.d(TAG, "Network Location changed to: " + getLocationInfo(location));
+            curLocationMap.put(LocationManager.NETWORK_PROVIDER, location);
+            updateDisplayLocation(LocationManager.NETWORK_PROVIDER);
         }
 
         public void onProviderDisabled(String provider) {
@@ -102,14 +111,12 @@ public class LocationService extends Service {
         // 获取 Provider 最后一个记录的地址信息
         Location lastKnownLocation = null;
         try {
-            lastKnownLocation = locationManager.getLastKnownLocation(currentProvider);
-            if (lastKnownLocation != null) {
-                Log.d(TAG, "LastKnownLocation: "
-                        + getLocationInfo(lastKnownLocation));
-            } else {
-                Log.d(TAG, "Last Location Unkown!");
-            }
             // 注册监听器接受位置更新
+            lastKnownLocation = locationManager.getLastKnownLocation(currentProvider);
+            if(lastKnownLocation != null){
+                curLocationMap.put(currentProvider, lastKnownLocation);
+                updateDisplayLocation(currentProvider);
+            }
             LocationListener ll = locationListenerMap.get(currentProvider);
             if(ll != null) {
                 locationManager.requestLocationUpdates(currentProvider, 0, 0, ll);
@@ -133,6 +140,20 @@ public class LocationService extends Service {
             cancelAlarm(ALARM_GET_GPS_LOCATION);
         }else if(currentProvider.equals(LocationManager.NETWORK_PROVIDER)) {
             cancelAlarm(ALARM_GET_NETWORK_LOCATION);
+        }
+    }
+
+    private void requestSingleLocation(String provider) {
+        Log.d(TAG, "request Single Location <" + provider + ">");
+        try {
+            LocationListener ll = locationListenerMap.get(provider);
+            if(ll != null) {
+                locationManager.requestSingleUpdate(provider, ll, null);
+            } else {
+                Log.e(TAG, "Warning, this kind of provider [" + provider + "] is not existed");
+            }
+        } catch (SecurityException e) {
+            requestPermissions(new String[] {"android.permission.ACCESS_FINE_LOCATION","android.permission.ACCESS_COARSE_LOCATION"});
         }
     }
 
@@ -160,9 +181,18 @@ public class LocationService extends Service {
         Log.d(TAG, "Set Alarm action: " + action + " time: " + time + "ms");
         Intent intent = new Intent(action);
         PendingIntent alarmIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
-        alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 SystemClock.elapsedRealtime() +
                         time, alarmIntent);
+    }
+
+    private void startAlarm(String action, long startTime, long intervalTime){
+        Log.d(TAG, "Set Alarm action: " + action + " time: " + startTime + "ms" + " period: " + intervalTime + "ms");
+        Intent intent = new Intent(action);
+        PendingIntent alarmIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
+        alarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() +
+                        startTime, intervalTime, alarmIntent);
     }
 
     private void cancelAlarm(String action){
@@ -184,7 +214,7 @@ public class LocationService extends Service {
         locationManager = (LocationManager)getSystemService(LOCATION_SERVICE);
         telephonyManager = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
         alarmManager = (AlarmManager)getSystemService(ALARM_SERVICE);
-        mbinder = new LocalBinder();
+        mBinder = new LocalBinder();
 
         registerLocationReceiver();
 
@@ -208,24 +238,26 @@ public class LocationService extends Service {
         }
 
         void stopLocationUpdate(String provider) {
-
             deregLocation(provider);
         }
 
         void setLocationFeq(String provider,int time) {
             Log.d(TAG, "setLocationFeq time: " + time + "s");
-            if(provider.equals(LocationManager.GPS_PROVIDER)) {
-                startAlarm(ALARM_GET_GPS_LOCATION, time * 1000);
-            }else if(provider.equals(LocationManager.NETWORK_PROVIDER)) {
-                startAlarm(ALARM_GET_NETWORK_LOCATION, time * 1000);
+            deregLocation(provider);
+            if(time == 0) {
+                regLocation(provider);
+            } else {
+                if (provider.equals(LocationManager.GPS_PROVIDER)) {
+                    startAlarm(ALARM_GET_GPS_LOCATION, 0,time * 1000);
+                } else if (provider.equals(LocationManager.NETWORK_PROVIDER)) {
+                    startAlarm(ALARM_GET_NETWORK_LOCATION, 0,time * 1000);
+                }
             }
         }
 
-        Location getCurLocation() {
-            return curLocation;
+        Location getCurLocation(String provider) {
+            return curLocationMap.get(provider);
         }
-
-
     }
 
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
@@ -236,8 +268,10 @@ public class LocationService extends Service {
             switch (intent.getAction())
             {
                 case ALARM_GET_GPS_LOCATION:
+                    requestSingleLocation(LocationManager.GPS_PROVIDER);
                     break;
                 case ALARM_GET_NETWORK_LOCATION:
+                    requestSingleLocation(LocationManager.NETWORK_PROVIDER);
                     break;
                 case "android.net.conn.CONNECTIVITY_CHANGE":
                     Log.d(TAG,"==============");
@@ -263,7 +297,7 @@ public class LocationService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        return mbinder;
+        return mBinder;
     }
 
     @Override
