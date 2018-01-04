@@ -180,25 +180,31 @@ public class LocationService extends Service {
     private void startAlarm(String action, long time){
         Log.d(TAG, "Set Alarm action: " + action + " time: " + time + "ms");
         Intent intent = new Intent(action);
-        PendingIntent alarmIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
+        PendingIntent alarmIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 SystemClock.elapsedRealtime() +
                         time, alarmIntent);
     }
 
     private void startAlarm(String action, long startTime, long intervalTime){
-        Log.d(TAG, "Set Alarm action: " + action + " time: " + startTime + "ms" + " period: " + intervalTime + "ms");
+        Log.d(TAG, "Set Alarm action: " + action + " time: "  + " period: " + intervalTime + "ms");
         Intent intent = new Intent(action);
-        PendingIntent alarmIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
-        alarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+        if(intervalTime > 0) {
+            intent.putExtra("period", intervalTime);
+        }
+        if(startTime <= 0) {
+            startTime = intervalTime;
+        }
+        PendingIntent alarmIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 SystemClock.elapsedRealtime() +
-                        startTime, intervalTime, alarmIntent);
+                        startTime, alarmIntent);
     }
 
     private void cancelAlarm(String action){
         Log.d(TAG, "Cancel Alarm action: " + action);
         Intent intent = new Intent(action);
-        PendingIntent alarmIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
+        PendingIntent alarmIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         alarmManager.cancel(alarmIntent);
     }
 
@@ -269,15 +275,20 @@ public class LocationService extends Service {
             {
                 case ALARM_GET_GPS_LOCATION:
                     requestSingleLocation(LocationManager.GPS_PROVIDER);
+                    if(intent.hasExtra("period")) {
+                        startAlarm(ALARM_GET_GPS_LOCATION, 0,intent.getLongExtra("period",0));
+                    }
                     break;
                 case ALARM_GET_NETWORK_LOCATION:
                     requestSingleLocation(LocationManager.NETWORK_PROVIDER);
+                    if(intent.hasExtra("period")) {
+                        startAlarm(ALARM_GET_NETWORK_LOCATION, 0,intent.getLongExtra("period",0));
+                    }
                     break;
                 case "android.net.conn.CONNECTIVITY_CHANGE":
                     Log.d(TAG,"==============");
                     break;
             }
-
         }
     };
 

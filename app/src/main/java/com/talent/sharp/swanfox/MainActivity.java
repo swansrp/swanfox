@@ -14,10 +14,12 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.telephony.TelephonyManager;
+import android.text.Layout;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.support.design.widget.FloatingActionButton;
@@ -27,10 +29,14 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.igexin.sdk.PushManager;
 import com.umeng.message.IUmengRegisterCallback;
 import com.umeng.message.PushAgent;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -50,6 +56,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvGpsLatitude;
     private TextView tvNwLongitude;
     private TextView tvNwLatitude;
+    private LinearLayout lyGpsLoction;
+    private LinearLayout lyNwLocation;
     private TextView tvCellId;
     private TextView tvLac;
     private TextView tvSysId;
@@ -63,7 +71,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean mIsLocationBound = false;
     private LocationService.LocalBinder mLocationBinder = null;
 
-
+    String gpsUpdateTime = null;
+    String nwUpdateTime = null;
 
     public final static int MSG_UPDATE_GPS_LOCATION = 0;
     public final static int MSG_UPDATE_NW_LOCATION = 1;
@@ -87,6 +96,11 @@ public class MainActivity extends AppCompatActivity {
         tvGpsLatitude = (TextView) findViewById(R.id.tv_gps_latitude);
         tvNwLongitude = (TextView) findViewById(R.id.tv_nw_longitude);
         tvNwLatitude = (TextView) findViewById(R.id.tv_nw_latitude);
+
+        lyGpsLoction = (LinearLayout) findViewById(R.id.layout_gsp_location);
+        lyNwLocation = (LinearLayout) findViewById(R.id.layout_nw_location);;
+
+
         tvCellId = (TextView) findViewById(R.id.tv_cellid);
         tvLac = (TextView) findViewById(R.id.tv_lac);
         tvSysId = (TextView) findViewById(R.id.tv_sid);
@@ -172,14 +186,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void enablePush(EnumPush category) {
+
         switch(category) {
             case GE_PUSH:
-
+                Log.d(TAG, "enablePush GE_PUSH");
                 break;
             case J_PUSH:
+                Log.d(TAG, "enablePush J_PUSH");
                 break;
             case UMENG_PUSH:
-                PushAgent mPushAgent = PushAgent.getInstance(getApplication());
+                Log.d(TAG, "enablePush UMENG_PUSH");
+                PushAgent mPushAgent = PushAgent.getInstance(getApplicationContext());
                 //注册推送服务，每次调用register方法都会回调该接口
                 mPushAgent.register(new IUmengRegisterCallback() {
                     @Override
@@ -189,7 +206,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     @Override
                     public void onFailure(String s, String s1) {
-
+                        Log.d(TAG, "My device register UMENG failed " + s + "  " + s1);
                     }
                 });
                 break;
@@ -199,6 +216,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initPushService() {
+        if(swGePush.isChecked()) {
+            enablePush(EnumPush.GE_PUSH);
+        }
+        if(swJiPush.isChecked()) {
+            enablePush(EnumPush.J_PUSH);
+        }
+        if(swUmengPush.isChecked()) {
+            enablePush(EnumPush.UMENG_PUSH);
+        }
         swGePush.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -281,6 +307,20 @@ public class MainActivity extends AppCompatActivity {
                     }
                     updateLocationDisplay();
                 }
+            }
+        });
+        lyGpsLoction.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getApplicationContext(), gpsUpdateTime,
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+        lyNwLocation.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getApplicationContext(), nwUpdateTime,
+                        Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -377,16 +417,20 @@ public class MainActivity extends AppCompatActivity {
         public boolean handleMessage(Message msg) {
             Log.d(TAG, "msg.what: " + msg.what);
             Location loc = null;
+            SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+            Date curDate = new Date(System.currentTimeMillis());//获取当前时间
             switch (msg.what) {
                 case MSG_UPDATE_GPS_LOCATION:
                     loc = (Location)(msg.obj);
                     tvGpsLatitude.setText(String.valueOf(loc.getLatitude()));
                     tvGpsLongitude.setText(String.valueOf(loc.getLongitude()));
+                    gpsUpdateTime = formatter.format(curDate);
                     break;
                 case MSG_UPDATE_NW_LOCATION:
                     loc = (Location)(msg.obj);
                     tvNwLatitude.setText(String.valueOf(loc.getLatitude()));
                     tvNwLongitude.setText(String.valueOf(loc.getLongitude()));
+                    nwUpdateTime = formatter.format(curDate);
                     break;
                 case MSG_REQ_LOCATION_PERMISSION:
                     MainActivity.this.requestPermissions((String[])(msg.obj), 0);

@@ -194,7 +194,7 @@
             android:layout_width="fill_parent"
             android:layout_height="1dip"/>
         <LinearLayout
-            android:id="@+id/layout_location"
+            android:id="@+id/layout_gsp_location"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
@@ -250,7 +250,7 @@
             android:layout_width="fill_parent"
             android:layout_height="0.1dip"/>
         <LinearLayout
-            android:id="@+id/layout_location_res"
+            android:id="@+id/layout_nw_location"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
