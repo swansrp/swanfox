@@ -16,15 +16,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.provider.Settings;
-import android.telephony.TelephonyManager;
-import android.text.Layout;
-import android.util.Log;
-import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.Switch;
-import android.widget.TextView;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
@@ -38,19 +29,19 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
-import java.io.File;
-
-import com.getui.demo.DemoIntentService;
 import com.igexin.sdk.PushManager;
 import com.umeng.message.IUmengCallback;
 import com.umeng.message.IUmengRegisterCallback;
 import com.umeng.message.PushAgent;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 
 
@@ -73,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvGpsLatitude;
     private TextView tvNwLongitude;
     private TextView tvNwLatitude;
-    private LinearLayout lyGpsLoction;
+    private LinearLayout lyGpsLocation;
     private LinearLayout lyNwLocation;
     private TextView tvCellId;
     private TextView tvLac;
@@ -118,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         tvNwLongitude = (TextView) findViewById(R.id.tv_nw_longitude);
         tvNwLatitude = (TextView) findViewById(R.id.tv_nw_latitude);
 
-        lyGpsLoction = (LinearLayout) findViewById(R.id.layout_gsp_location);
+        lyGpsLocation = (LinearLayout) findViewById(R.id.layout_gsp_location);
         lyNwLocation = (LinearLayout) findViewById(R.id.layout_nw_location);;
 
 
@@ -275,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(String deviceToken) {
                         //注册成功会返回device token
-                        Log.d(TAG, "My device token is: " + deviceToken);
+                        Log.e(TAG, "My device token is: " + deviceToken);
                     }
                     @Override
                     public void onFailure(String s, String s1) {
@@ -388,7 +379,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        lyGpsLoction.setOnClickListener(new View.OnClickListener(){
+        lyGpsLocation.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 Toast.makeText(getApplicationContext(), gpsUpdateTime,
